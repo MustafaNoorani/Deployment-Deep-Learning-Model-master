@@ -21,6 +21,9 @@ import pandas as pd
 import cv2
 import numpy as np
 import tensorflow as tf
+import string
+from flask_cors import CORS, cross_origin
+import base64
 #df = pd.read_excel('dataset excel.xlsx')
 
 from PIL import Image
@@ -52,6 +55,7 @@ from gevent.pywsgi import WSGIServer
 
 # Define a flask app
 app = Flask(__name__)
+CORS(app, supports_credentials=True) 
 from platform import python_version
 print(python_version())
 
@@ -72,6 +76,11 @@ print('Model loaded. Check http://127.0.0.1:5000/')
 
 
 def model_predict(img_path, model):
+     
+    
+    
+    
+    
     categories = {0: 'air-filter', 1: 'back-light', 2: 'chain-cover', 3: 'chain-spocket', 
               4: 'magnet-coil', 5: 'drum',
               6: 'gear-lever', 7: 'handle', 8: 'head', 9: 'head-light', 10: 'horn',
@@ -79,6 +88,7 @@ def model_predict(img_path, model):
               16: 'piston', 17: 'rim', 18: 'seat', 19: 'side-cover', 
               20: 'silencer', 21: 'tanki'}
     #img = image.load_img(img_path, target_size=(224, 224))
+    
     img = cv2.imread(img_path) # Error
     img = cv2.resize(img,(224,224))
     img = np.reshape(img,[1,224,224,3])
@@ -108,23 +118,36 @@ def index():
 
 @app.route('/predict', methods=['GET', 'POST'])
 def upload():
+    #res = 'image'
+    N=7
+    content = request.json
+    
+    
+    image = content['image']
+    res = ''.join(random.choices(string.ascii_uppercase + string.digits, k=N))
+#    image = content['image']
+    decoded_data= base64.b64decode((image))
+    image_path = str(res)+'.jpeg'
+    img_file = open(image_path, 'wb')
+    img_file.write(decoded_data)   
+    
+    
+    
     if request.method == 'POST':
         # Get the file from post request
-        f = request.files['file']
-
+       # image_64_encode = request.files
+      #  f = base64.decodestring(image_64_encode) 
+       
         # Save the file to ./uploads
-        basepath = os.path.dirname(__file__)
-        file_path = os.path.join(
-            basepath, 'uploads', secure_filename(f.filename))
-        f.save(file_path)
+        #basepath = os.path.dirname(__file__)
+        #file_path = os.path.join(
+         #   basepath, 'uploads', secure_filename(f.filename))
+        #f.save(file_path)
 
         # Make prediction
-        preds = model_predict(file_path, model)
+        preds = model_predict(image_path, model)
 
-        # Process your result for human
-        # pred_class = preds.argmax(axis=-1)            # Simple argmax
-        #pred_class = decode_predictions(preds, top=1)   # ImageNet Decode
-        #result = str(pred_class[0][0][1])               # Convert to string
+                    # Convert to string
         return preds
     return None
 
